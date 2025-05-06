@@ -1,0 +1,7 @@
+# Active la réécriture des URL
+RewriteEngine On
+
+# Redirige toutes les autres requêtes vers le build principal (index.html à la racine)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]

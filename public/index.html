@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg"
+  data-sidebar-image="none" data-preloader="disable" data-bs-theme="light" data-layout-width="fluid"
+  data-layout-position="fixed" data-layout-style="default" data-sidebar-visibility="show">
+
+<head>
+  <meta charset="utf-8" />
+  <!-- <link rel="icon" href="%PUBLIC_URL%/favicon.ico" /> -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="description" content="Web site created using create-react-app" />
+  <!-- <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" /> -->
+  <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+  <base href="/extranetbackoffice/">
+  <title>Extranet Back-office</title>
+  <!-- <link rel="shortcut icon" href="%PUBLIC_URL%/assets/images/favicon.ico"> -->
+  <link rel="shortcut icon" href="%PUBLIC_URL%/assets/favicon_io/favicon.ico">
+  <link href="assets/libs/jsvectormap/css/jsvectormap.min.css" rel="stylesheet" type="text/css" />
+  <script src="assets/js/layout.js"></script>
+  <link href="assets/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+  <link href="assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+  <link href="assets/css/app.min.css" rel="stylesheet" type="text/css" />
+  <link href="assets/css/custom.min.css" rel="stylesheet" type="text/css" />
+  <style>
+    :root {
+        --bs-primary: #ff5733;
+    }
+
+    /* .btn-primary {
+        background-color: #3656a1 !important;
+        border-color: #3656a1 !important;
+    } */
+</style>
+
+  <script>
+    // Fonction pour charger les valeurs de localStorage
+    function loadSettings() {
+      const layout = localStorage.getItem('layout') || 'vertical';
+      const topbar = localStorage.getItem('topbar') || 'light';
+      const sidebar = localStorage.getItem('sidebar') || 'dark';
+      const sidebarSize = localStorage.getItem('sidebarSize') || 'lg';
+      const sidebarImage = localStorage.getItem('sidebarImage') || 'none';
+      const preloader = localStorage.getItem('preloader') || 'disable';
+      const theme = localStorage.getItem('theme') || 'light';
+      const layoutWidth = localStorage.getItem('layoutWidth') || 'fluid';
+      const layoutPosition = localStorage.getItem('layoutPosition') || 'fixed';
+      const layoutStyle = localStorage.getItem('layoutStyle') || 'default';
+      const sidebarVisibility = localStorage.getItem('sidebarVisibility') || 'show';
+
+      document.documentElement.setAttribute('data-layout', layout);
+      document.documentElement.setAttribute('data-topbar', topbar);
+      document.documentElement.setAttribute('data-sidebar', sidebar);
+      document.documentElement.setAttribute('data-sidebar-size', sidebarSize);
+      document.documentElement.setAttribute('data-sidebar-image', sidebarImage);
+      document.documentElement.setAttribute('data-preloader', preloader);
+      document.documentElement.setAttribute('data-bs-theme', theme);
+      document.documentElement.setAttribute('data-layout-width', layoutWidth);
+      document.documentElement.setAttribute('data-layout-position', layoutPosition);
+      document.documentElement.setAttribute('data-layout-style', layoutStyle);
+      document.documentElement.setAttribute('data-sidebar-visibility', sidebarVisibility);
+    }
+
+    // Charger les paramètres au chargement de la page
+    window.onload = loadSettings;
+  </script>
+
+  <!-- <script>
+    WebFontConfig = {
+      google: { families: ["Poppins:400,500,600,700"] },
+    };
+    (function (d) {
+      var wf = d.createElement("script"),
+        s = d.scripts[0];
+      wf.src = "assets/js/webfont.js";
+      wf.async = true;
+      s.parentNode.insertBefore(wf, s);
+    })(document);
+  </script>
+
+  <link rel="preload" href="assets/vendor/fontawesome-free/webfonts/fa-regular-400.woff2" as="font" type="font/woff2"
+    crossorigin="anonymous" />
+  <link rel="preload" href="assets/vendor/fontawesome-free/webfonts/fa-solid-900.woff2" as="font" type="font/woff2"
+    crossorigin="anonymous" />
+  <link rel="preload" href="assets/vendor/fontawesome-free/webfonts/fa-brands-400.woff2" as="font" type="font/woff2"
+    crossorigin="anonymous" />
+  <link rel="preload" href="assets/fonts/wolmart87d5.woff?png09e" as="font" type="font/woff" crossorigin="anonymous" /> -->
+
+</head>
+
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+</body>
+
+</html>
