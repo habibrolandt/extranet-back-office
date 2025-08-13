@@ -155,7 +155,7 @@ function Orders() {
       link.click()
       document.body.removeChild(link)
 
-      toast.success("PDF généré avec succès")
+      //toast.success("PDF généré avec succès")
     } catch (error) {
       console.error("Erreur lors de la génération du PDF:", error)
       toast.error("Erreur lors de la génération du PDF: " + (error.message || "Erreur inconnue"))

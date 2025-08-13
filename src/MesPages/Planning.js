@@ -4,10 +4,14 @@ import { crudData, doRequest } from "../services/apiService";
 import TableWithPaginationHOC from "../Mescomposants/TableWithPaginationHOC/TableWithPaginationHOC";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { generatePageNumbers, formatDateOriginal } from "../services/lib";
+import { pdf } from "@react-pdf/renderer";
+import { toast } from "react-toastify";
+import ListDeliveryCalendarPDF from "../Mescomposants/exportPDF/listDeliveryCalendarPDF";
 
 function Planning() {
     const [totalPage, setTotalPage] = useState(0);
     const [searchParams, setSearchParams] = useSearchParams();
+    const [isExporting, setIsExporting] = useState(false);
     const [activeFilters, setActiveFilters] = useState(() => {
         const filters = {};
         searchParams.forEach((value, key) => {
@@ -71,11 +75,13 @@ function Planning() {
                     return Math.ceil(response.data["total"] / limit);
                 });
                 goToPage(1);
+                toast.success("Suppression effectuée avec succès");
             } else {
-                console.log("error");
+                toast.error("Erreur lors de la suppression");
             }
         } catch (error) {
             console.error(error.message);
+            toast.error("Une erreur est survenue lors de la suppression");
         }
     };
 
@@ -90,30 +96,27 @@ function Planning() {
                 setCurrentData((prevData) => {
                     return prevData.map((item) => {
                         if (item.lg_livid === lg_livid) {
-                            return { ...item, str_callivstatut: "closed" };
+                            return { ...item, str_livstatut: "closed" };
                         }
-
                         return item;
                     });
                 });
+                toast.success("Calendrier fermé avec succès");
             }
         } catch (error) {
             console.log(error);
+            toast.error("Erreur lors de la fermeture du calendrier");
         }
     };
 
     useEffect(() => {
         const user = localStorage.getItem("user");
-
         if (!user) {
             navigate("/");
         }
     }, [navigate]);
 
     const goToPage = (page) => {
-        // if (topRef.current) {
-        //     topRef.current.scrollIntoView({ behavior: "smooth" });
-        // }
         const params = new URLSearchParams(searchParams);
         params.set("page", page);
         setSearchParams(params);
@@ -162,6 +165,7 @@ function Planning() {
             return response.data["data"];
         } catch (error) {
             console.error(error);
+            throw error;
         }
     };
 
@@ -179,35 +183,89 @@ function Planning() {
 
     const pageNumbers = generatePageNumbers(totalPage, page);
 
+    const handleDownloadPDF = async () => {
+        if (!currentData || currentData.length === 0) {
+            toast.warning("Aucune donnée à exporter");
+            return;
+        }
+
+        try {
+            setIsExporting(true);
+            //toast.info("Génération du PDF en cours...");
+
+            // Limiter le nombre d'éléments pour éviter les erreurs de mémoire
+            const maxItems = 100;
+            const dataToExport = currentData.length > maxItems
+                ? currentData.slice(0, maxItems)
+                : currentData;
+
+            if (currentData.length > maxItems) {
+                toast.warning(`L'export est limité aux ${maxItems} premiers calendriers pour des raisons de performance.`);
+            }
+
+            // Vérification des données avant génération
+            const validData = dataToExport.map((item) => ({
+                ...item,
+                zone: item.zone || "N/A",
+                dt_livbegin: item.dt_livbegin || "N/A",
+                dt_livend: item.dt_livend || "N/A",
+                cmd_count: item.cmd_count || 0,
+                str_livstatut: item.str_livstatut || "open",
+                lg_livid: item.lg_livid || "N/A",
+            }));
+
+            const blob = await pdf(<ListDeliveryCalendarPDF deliveryCalendars={validData} />).toBlob();
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `calendriers-livraison-${new Date().toLocaleDateString().replace(/\//g, "-")}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            //toast.success("PDF généré avec succès");
+        } catch (error) {
+            console.error("Erreur lors de la génération du PDF:", error);
+            toast.error("Erreur lors de la génération du PDF: " + (error.message || "Erreur inconnue"));
+        } finally {
+            setIsExporting(false);
+        }
+    };
     return (
         <div className="row">
             <div className="col-lg-12">
                 <h2 className="">Calendriers de livraisons</h2>
                 <div className="card">
                     <div className="card-header">
-                        <div className="row g-4 ">
+                        <div className="row g-4 justify-content-between">
                             <div className="col-sm-auto">
-                                <div>
-                                    <Link
-                                        to={
-                                            "/dashboard/calendriers-livraisons/creation"
-                                        }
-                                        className="btn btn-primary add-btn"
+                                <Link
+                                    to="/dashboard/calendriers-livraisons/creation"
+                                    className="btn btn-primary add-btn"
+                                >
+                                    <i className="ri-add-line align-bottom me-1"></i> Ajouter
+                                </Link>
+
+                                {selectedCheckBoxes.length > 0 && (
+                                    <button
+                                        className="btn btn-soft-danger ms-2"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#exampleModalgrid3"
                                     >
-                                        <i className="ri-add-line align-bottom me-1"></i>{" "}
-                                        Ajouter
-                                    </Link>
-                                    {selectedCheckBoxes.length > 0 && (
-                                        <button
-                                            className="btn btn-soft-danger"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#exampleModalgrid3"
-                                            style={{ marginLeft: "10px" }}
-                                        >
-                                            <i className="ri-delete-bin-2-line"></i>
-                                        </button>
-                                    )}
-                                </div>
+                                        <i className="ri-delete-bin-2-line"></i>
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="col-sm-auto">
+                                <button
+                                    onClick={handleDownloadPDF}
+                                    type="button"
+                                    className="btn btn-primary"
+                                    disabled={isExporting || !currentData || currentData.length === 0}
+                                >
+                                    <i className="ri-file-download-line align-middle me-1"></i>
+                                    {isExporting ? "Génération en cours..." : "Exporter en PDF"}
+                                </button>
                             </div>
                         </div>
                         <DeleteModal
@@ -277,7 +335,7 @@ function Planning() {
                                     </thead>
                                     <tbody className="list form-check-all">
                                         {currentData &&
-                                        currentData.length > 0 ? (
+                                            currentData.length > 0 ? (
                                             currentData.map((item, index) => (
                                                 <tr key={index}>
                                                     <th scope="row">
@@ -331,24 +389,24 @@ function Planning() {
                                                         <div className="d-flex gap-2">
                                                             {item.str_livstatut !==
                                                                 "closed" && (
-                                                                <div className="edit">
-                                                                    <Link
-                                                                        to={`/calendriers-livraisons/modification/${item.lg_livid}`}
-                                                                        className="btn btn-sm btn-warning edit-item-btn"
-                                                                    >
-                                                                        <svg
-                                                                            xmlns="http://www.w3.org/2000/svg"
-                                                                            viewBox="0 0 24 24"
-                                                                            fill="currentColor"
-                                                                            style={{
-                                                                                width: "20px",
-                                                                            }}
+                                                                    <div className="edit">
+                                                                        <Link
+                                                                            to={`/calendriers-livraisons/modification/${item.lg_livid}`}
+                                                                            className="btn btn-sm btn-warning edit-item-btn"
                                                                         >
-                                                                            <path d="M6.41421 15.89L16.5563 5.74785L15.1421 4.33363L5 14.4758V15.89H6.41421ZM7.24264 17.89H3V13.6473L14.435 2.21231C14.8256 1.82179 15.4587 1.82179 15.8492 2.21231L18.6777 5.04074C19.0682 5.43126 19.0682 6.06443 18.6777 6.45495L7.24264 17.89ZM3 19.89H21V21.89H3V19.89Z"></path>
-                                                                        </svg>
-                                                                    </Link>
-                                                                </div>
-                                                            )}
+                                                                            <svg
+                                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                                viewBox="0 0 24 24"
+                                                                                fill="currentColor"
+                                                                                style={{
+                                                                                    width: "20px",
+                                                                                }}
+                                                                            >
+                                                                                <path d="M6.41421 15.89L16.5563 5.74785L15.1421 4.33363L5 14.4758V15.89H6.41421ZM7.24264 17.89H3V13.6473L14.435 2.21231C14.8256 1.82179 15.4587 1.82179 15.8492 2.21231L18.6777 5.04074C19.0682 5.43126 19.0682 6.06443 18.6777 6.45495L7.24264 17.89ZM3 19.89H21V21.89H3V19.89Z"></path>
+                                                                            </svg>
+                                                                        </Link>
+                                                                    </div>
+                                                                )}
 
                                                             <div className="remove">
                                                                 <Link
@@ -369,28 +427,28 @@ function Planning() {
                                                             </div>
                                                             {item.str_livstatut !==
                                                                 "closed" && (
-                                                                <div className="remove">
-                                                                    <button
-                                                                        onClick={() =>
-                                                                            handleCloseCalendar(
-                                                                                item.lg_livid
-                                                                            )
-                                                                        }
-                                                                        className="btn btn-sm btn-success remove-item-btn"
-                                                                    >
-                                                                        <svg
-                                                                            xmlns="http://www.w3.org/2000/svg"
-                                                                            viewBox="0 0 24 24"
-                                                                            fill="currentColor"
-                                                                            style={{
-                                                                                width: "20px",
-                                                                            }}
+                                                                    <div className="remove">
+                                                                        <button
+                                                                            onClick={() =>
+                                                                                handleCloseCalendar(
+                                                                                    item.lg_livid
+                                                                                )
+                                                                            }
+                                                                            className="btn btn-sm btn-success remove-item-btn"
                                                                         >
-                                                                            <path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11.0026 16L6.75999 11.7574L8.17421 10.3431L11.0026 13.1716L16.6595 7.51472L18.0737 8.92893L11.0026 16Z"></path>
-                                                                        </svg>
-                                                                    </button>
-                                                                </div>
-                                                            )}
+                                                                            <svg
+                                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                                viewBox="0 0 24 24"
+                                                                                fill="currentColor"
+                                                                                style={{
+                                                                                    width: "20px",
+                                                                                }}
+                                                                            >
+                                                                                <path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11.0026 16L6.75999 11.7574L8.17421 10.3431L11.0026 13.1716L16.6595 7.51472L18.0737 8.92893L11.0026 16Z"></path>
+                                                                            </svg>
+                                                                        </button>
+                                                                    </div>
+                                                                )}
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -480,11 +538,10 @@ function Planning() {
                                                         Math.max(1, page - 1)
                                                     );
                                                 }}
-                                                className={`page-item pagination-prev ${
-                                                    page - 1 === 0
+                                                className={`page-item pagination-prev ${page - 1 === 0
                                                         ? "disabled"
                                                         : ""
-                                                }`}
+                                                    }`}
                                                 disabled={page - 1 === 0}
                                             >
                                                 Précedent
@@ -501,12 +558,11 @@ function Planning() {
                                                             </span>
                                                         ) : (
                                                             <li
-                                                                className={`${
-                                                                    pageNumber ===
-                                                                    page
+                                                                className={`${pageNumber ===
+                                                                        page
                                                                         ? "active"
                                                                         : ""
-                                                                }`}
+                                                                    }`}
                                                                 key={index}
                                                             >
                                                                 <button
@@ -536,11 +592,10 @@ function Planning() {
                                                         )
                                                     );
                                                 }}
-                                                className={`page-item pagination-next ${
-                                                    page + 1 > totalPage
+                                                className={`page-item pagination-next ${page + 1 > totalPage
                                                         ? "disabled"
                                                         : ""
-                                                }`}
+                                                    }`}
                                                 disabled={page + 1 > totalPage}
                                             >
                                                 Suivant

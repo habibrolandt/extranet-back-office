@@ -263,7 +263,7 @@ function EditLivCalendar() {
             const response = await doRequest(params, "CommandeManager.php");
             if (response.data.code_statut === "1") {
                 handleSetShowSuccess();
-                navigate("/dashboard/calendriers-livraisons");
+                navigate("/calendriers-livraisons");
             } else {
                 console.error(response.data);
                 handleSetShowError();
